@@ -1,9 +1,10 @@
 # ActivApp — Requerimientos y Objetivos del Proyecto (TFG)
 
-**Proyecto:** ActivApp — Plataforma Web Progresiva SaaS Multi-Tenant y Offline-First  
-**Autor:** Joel Navarro  
-**Titulación:** Grado en Ingeniería Informática  
-**Curso / Convocatoria:** 2026  
+**Título Oficial:** ActivApp: Diseño e implementación de una plataforma SaaS multitenant y offline-first para la gestión integral de entidades deportivas y asociaciones juveniles.  
+**Estudiante:** Joel Navarro Molins (jnavarro@campus.eug.es)  
+**Tutor:** Gerard Enrique Manonellas  
+**Institución:** Escoles Universitàries Gimbernat i Tomàs Cerdà (Adscrita a la UAB)  
+**Curso / Convocatoria:** 2026-2027  
 
 ---
 

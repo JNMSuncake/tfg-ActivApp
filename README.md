@@ -103,4 +103,4 @@ npm.cmd run dev
 
 ## 🎓 Contexto Académico
 
-Proyecto desarrollado por **Joel Navarro** como **Trabajo de Fin de Grado (TFG)** en el Grado en Ingeniería Informática (Convocatoria 2026).
+Proyecto desarrollado por **Joel Navarro Molins** como **Trabajo de Fin de Grado (TFG)** en las **Escoles Universitàries Gimbernat i Tomàs Cerdà (Adscrita a la UAB)**, bajo la tutoría de **Gerard Enrique Manonellas** (Curso 2026-2027).
