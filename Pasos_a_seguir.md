@@ -32,29 +32,30 @@ Para asegurar la máxima calidad y evitar regresiones o código desordenado, se 
 - [x] Redacción de `README.md` público con presentación profesional.
 - [x] Redacción de `requerimientos_y_objetivos.md` con matriz de requisitos.
 - [x] Redacción de este documento `Pasos_a_seguir.md`.
-- [ ] Inicialización del repositorio Git y primer commit convencional.
-- [ ] Espera de instalación de Docker Desktop por parte del usuario.
+- [x] Inicialización del repositorio Git y primer commit convencional.
+- [x] Instalación y verificación de Docker Desktop activa.
 
 ---
 
 ### Fase 1: Arquitectura Base, Core Multi-Tenant y RBAC Dinámico
-- [ ] Configuración del Monorepo con TypeScript y npm workspaces:
+- [x] Configuración del Monorepo con TypeScript y npm workspaces:
   - `/backend` (Node.js + Express con TypeScript modular).
   - `/frontend` (React 18 + Vite + Tailwind CSS + Lucide React).
   - `/shared` (Tipos, enums y DTOs comunes Front/Back).
-- [ ] Orquestación con `docker-compose.yml` para PostgreSQL 16 y pgAdmin.
-- [ ] Modelado de la base de datos con **Prisma ORM**:
-  - Tablas: `Tenant`, `User`, `Role`, `Permission`, `Child`, `TutorChildRelation`.
+- [x] Orquestación con `docker-compose.yml` para PostgreSQL 16 saludable en puerto 5432.
+- [x] Modelado de la base de datos con **Prisma ORM**:
+  - Tablas: `Tenant`, `User`, `Role`, `Child`, `TutorChildRelation`, `Activity`, `ActivitySession`, `Enrollment`, `PaymentTransaction`, `AuthorizationDocument`, `AttendanceRecord`, `SyncConflictAudit`, `PushSubscriptionDevice`, `InternalMessage`.
   - Columna obligatoria `tenant_id` en todas las entidades de dominio.
-- [ ] Script de datos semilla (`seed.ts`) con 2 entidades de prueba:
-  - Entidad 1: Esplai juvenil con roles personalizados y monitores en prácticas.
-  - Entidad 2: Club deportivo con roles de entrenador y tesorero.
-- [ ] Módulo de Autenticación:
-  - Registro, Login con JWT (*Access Token* + *Refresh Token*) y hash de contraseñas (`argon2` o `bcrypt`).
+- [x] Script de datos semilla (`seed.ts`) con 2 entidades de prueba:
+  - Entidad 1: Club Esportiu Gràcia con roles, sesiones y usuario admin/entrenador.
+  - Entidad 2: Esplai El Pi de Sarrià con rol dinámico `MONITOR_PRACTICAS` y orden legal pendiente.
+- [x] Módulo de Autenticación:
+  - Login con JWT (*Access Token* 15m + *Refresh Token* 7d) y hash de contraseñas (`bcryptjs`).
   - Middleware `tenantContext.ts`: validación e inyección inmutable del `tenant_id` desde el JWT.
-  - Middleware `rbacGuard.ts`: comprobación de permisos granulares y validación contextual temporal (ABAC) para acceso médico.
-- [ ] Frontend: Shell de la aplicación, sistema de autenticación y panel de administración visual de roles y permisos dinámicos (matriz de permisos).
-- **Criterio de Aceptación Fase 1:** Compilación con 0 errores TypeScript (`npm.cmd run build`) y tests de aislamiento multi-tenant aprobados.
+  - Middleware `rbacGuard.ts`: comprobación de permisos granulares y función contextual temporal (ABAC) para acceso médico.
+- [x] Módulo de Roles Dinámicos (`roles.service.ts` y controlador): gestión y aislamiento por club.
+- [x] Frontend: Shell de la aplicación en React 18 + Vite + Tailwind CSS con selector de entidad, conmutador de simulación offline para el tribunal y matriz RBAC.
+- [x] **Criterio de Aceptación Fase 1:** Compilación con 0 errores TypeScript (`npm.cmd run build`) y verificación funcional de endpoints.
 
 ---
 

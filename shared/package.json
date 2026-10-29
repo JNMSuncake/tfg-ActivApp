@@ -1,0 +1,16 @@
+{
+  "name": "@activapp/shared",
+  "version": "1.0.0",
+  "description": "Contratos, tipos y DTOs compartidos de ActivApp para End-to-End Type Safety",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2"
+  }
+}

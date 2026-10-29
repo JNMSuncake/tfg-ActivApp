@@ -1,0 +1,351 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. ORGANIZACIÓN Y MULTI-TENANCY
+// ==========================================
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(120)
+  slug      String   @unique @db.VarChar(60)
+  logoUrl   String?  @map("logo_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  roles                Role[]
+  users                User[]
+  children             Child[]
+  activities           Activity[]
+  activitySessions     ActivitySession[]
+  enrollments          Enrollment[]
+  payments             PaymentTransaction[]
+  authorizations       AuthorizationDocument[]
+  attendanceRecords    AttendanceRecord[]
+  syncAudits           SyncConflictAudit[]
+  pushSubscriptions    PushSubscriptionDevice[]
+  internalMessages     InternalMessage[]
+
+  @@map("tenants")
+}
+
+// ==========================================
+// 2. ROLES DINÁMICOS Y USUARIOS (RBAC)
+// ==========================================
+
+model Role {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  name            String   @db.VarChar(60)
+  description     String   @db.VarChar(255)
+  permissions     String[] // Array de códigos de permisos (ej. 'attendance:take', 'medical:read_contextual')
+  isSystemDefault Boolean  @default(false) @map("is_system_default")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users  User[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  roleId       String   @map("role_id") @db.Uuid
+  email        String   @db.VarChar(150)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  fullName     String   @map("full_name") @db.VarChar(120)
+  phone        String?  @db.VarChar(30)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  tutorRelations      TutorChildRelation[]
+  monitorAssignments  ActivityMonitorAssignment[]
+  signedAuthorizations AuthorizationDocument[]
+  validatedPayments   PaymentTransaction[]    @relation("PaymentValidator")
+  updatedAttendances  AttendanceRecord[]      @relation("AttendanceAuditor")
+  pushSubscriptions   PushSubscriptionDevice[]
+  sentMessages        InternalMessage[]       @relation("SentMessages")
+  receivedMessages    InternalMessage[]       @relation("ReceivedMessages")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+// ==========================================
+// 3. MENORES Y VÍNCULOS FAMILIARES (RGPD)
+// ==========================================
+
+model Child {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  fullName              String   @map("full_name") @db.VarChar(120)
+  birthDate             DateTime @map("birth_date") @db.Date
+  allergies             String?  @db.Text
+  medicalNotesEncrypted String?  @map("medical_notes_encrypted") @db.Text
+  emergencyContact      String   @map("emergency_contact") @db.VarChar(150)
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  tutors            TutorChildRelation[]
+  enrollments       Enrollment[]
+  authorizations    AuthorizationDocument[]
+  attendanceRecords AttendanceRecord[]
+
+  @@index([tenantId])
+  @@map("children")
+}
+
+model TutorChildRelation {
+  id               String   @id @default(uuid()) @db.Uuid
+  tutorUserId      String   @map("tutor_user_id") @db.Uuid
+  childId          String   @map("child_id") @db.Uuid
+  relationshipType String   @default("PADRE_MADRE_TUTOR") @map("relationship_type") @db.VarChar(50)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  tutor User  @relation(fields: [tutorUserId], references: [id], onDelete: Cascade)
+  child Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorUserId, childId])
+  @@index([childId])
+  @@map("tutor_child_relations")
+}
+
+// ==========================================
+// 4. CALENDARIO Y ACTIVIDADES
+// ==========================================
+
+model Activity {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  title                 String   @db.VarChar(150)
+  description           String   @db.Text
+  type                  String   @db.VarChar(50) // 'ENTRENAMIENTO', 'EXCURSION', 'CAMPAMENTO', etc.
+  maxCapacity           Int      @map("max_capacity")
+  minAge                Int?     @map("min_age")
+  maxAge                Int?     @map("max_age")
+  requiresAuthorization Boolean  @default(false) @map("requires_authorization")
+  requiredMaterial      Json     @default("[]") @map("required_material") // RequiredMaterialItem[]
+  priceCents            Int      @default(0) @map("price_cents")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  sessions       ActivitySession[]
+  enrollments    Enrollment[]
+  authorizations AuthorizationDocument[]
+  messages       InternalMessage[]
+
+  @@index([tenantId])
+  @@map("activities")
+}
+
+model ActivitySession {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  activityId  String   @map("activity_id") @db.Uuid
+  startTime   DateTime @map("start_time")
+  endTime     DateTime @map("end_time")
+  location    String   @db.VarChar(180)
+  sharedNotes String?  @map("shared_notes") @db.Text
+  version     Int      @default(1) // Para control de concurrencia optimista y Merge
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  monitors    ActivityMonitorAssignment[]
+  attendances AttendanceRecord[]
+
+  @@index([tenantId])
+  @@index([activityId])
+  @@map("activity_sessions")
+}
+
+model ActivityMonitorAssignment {
+  sessionId     String @map("session_id") @db.Uuid
+  monitorUserId String @map("monitor_user_id") @db.Uuid
+
+  session ActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  monitor User            @relation(fields: [monitorUserId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, monitorUserId])
+  @@map("activity_monitor_assignments")
+}
+
+// ==========================================
+// 5. INSCRIPCIONES Y ARQUITECTURA FINANCIERA
+// ==========================================
+
+model Enrollment {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  activityId       String   @map("activity_id") @db.Uuid
+  childId          String   @map("child_id") @db.Uuid
+  status           String   @default("CONFIRMED") @db.VarChar(30) // 'CONFIRMED', 'WAITLISTED', 'PENDING_PAYMENT', 'CANCELLED'
+  waitlistPosition Int?     @map("waitlist_position")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  child    Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  payments PaymentTransaction[]
+
+  @@unique([activityId, childId])
+  @@index([tenantId])
+  @@index([activityId, status])
+  @@map("enrollments")
+}
+
+model PaymentTransaction {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  enrollmentId      String    @map("enrollment_id") @db.Uuid
+  amountCents       Int       @map("amount_cents")
+  status            String    @default("PENDING") @db.VarChar(30) // 'PENDING', 'REPORTED_BY_TUTOR', 'VALIDATED_MANUAL', 'REFUNDED'
+  method            String    @default("MANUAL_TRANSFER") @db.VarChar(30) // 'MANUAL_CASH', 'MANUAL_TRANSFER', 'GATEWAY_CARD'
+  // Campos desacoplados preparados para Stripe / Redsys (Payment-Ready)
+  provider          String    @default("MANUAL") @db.VarChar(30) // 'MANUAL', 'STRIPE', 'REDSYS'
+  externalTxId      String?   @map("external_tx_id") @db.VarChar(120)
+  idempotencyKey    String?   @unique @map("idempotency_key") @db.VarChar(120)
+  webhookPayload    Json?     @map("webhook_payload")
+  validatedByUserId String?   @map("validated_by_user_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enrollment  Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  validator   User?      @relation("PaymentValidator", fields: [validatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([enrollmentId])
+  @@map("payment_transactions")
+}
+
+// ==========================================
+// 6. LEGALTECH Y AUTORIZACIONES DIGITALES
+// ==========================================
+
+model AuthorizationDocument {
+  id                  String    @id @default(uuid()) @db.Uuid
+  tenantId            String    @map("tenant_id") @db.Uuid
+  activityId          String    @map("activity_id") @db.Uuid
+  childId             String    @map("child_id") @db.Uuid
+  signedByUserId      String?   @map("signed_by_user_id") @db.Uuid
+  status              String    @default("PENDING") @db.VarChar(30) // 'PENDING', 'SIGNED', 'REJECTED'
+  signaturePngBase64  String?   @map("signature_png_base64") @db.Text
+  documentSha256      String?   @map("document_sha256") @db.VarChar(64)
+  pdfStoragePath      String?   @map("pdf_storage_path") @db.VarChar(255)
+  signedAt            DateTime? @map("signed_at")
+  signerMetadata      Json?     @map("signer_metadata") // user_agent, ip, timestamp_iso
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  child    Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  signer   User?    @relation(fields: [signedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([activityId, childId])
+  @@index([tenantId])
+  @@map("authorization_documents")
+}
+
+// ==========================================
+// 7. ASISTENCIA OFFLINE Y MOTOR DE MERGE
+// ==========================================
+
+model AttendanceRecord {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  sessionId        String   @map("session_id") @db.Uuid
+  childId          String   @map("child_id") @db.Uuid
+  status           String   @default("PRESENT") @db.VarChar(20) // 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED'
+  incidentNote     String?  @map("incident_note") @db.Text
+  updatedByUserId  String?  @map("updated_by_user_id") @db.Uuid
+  clientTimestamp  DateTime @default(now()) @map("client_timestamp")
+  version          Int      @default(1)
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session  ActivitySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  child    Child           @relation(fields: [childId], references: [id], onDelete: Cascade)
+  auditor  User?           @relation("AttendanceAuditor", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, childId])
+  @@index([tenantId])
+  @@index([sessionId])
+  @@map("attendance_records")
+}
+
+model SyncConflictAudit {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  entityType   String   @map("entity_type") @db.VarChar(50)
+  entityId     String   @map("entity_id") @db.Uuid
+  userAId      String   @map("user_a_id") @db.Uuid
+  userBId      String   @map("user_b_id") @db.Uuid
+  payloadA     Json     @map("payload_a")
+  payloadB     Json     @map("payload_b")
+  mergedResult Json     @map("merged_result")
+  resolvedAt   DateTime @default(now()) @map("resolved_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("sync_conflict_audits")
+}
+
+// ==========================================
+// 8. NOTIFICACIONES PUSH Y COMUNICACIÓN
+// ==========================================
+
+model PushSubscriptionDevice {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique @db.Text
+  p256dhKey String   @map("p256dh_key") @db.Text
+  authKey   String   @map("auth_key") @db.Text
+  userAgent String?  @map("user_agent") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("push_subscription_devices")
+}
+
+model InternalMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  activityId  String?  @map("activity_id") @db.Uuid
+  senderId    String   @map("sender_id") @db.Uuid
+  recipientId String?  @map("recipient_id") @db.Uuid // null para mensajes de difusión general por actividad
+  subject     String   @db.VarChar(180)
+  body        String   @db.Text
+  isUrgent    Boolean  @default(false) @map("is_urgent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activity  Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  sender    User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User?     @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([activityId])
+  @@index([recipientId])
+  @@map("internal_messages")
+}

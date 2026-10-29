@@ -1,0 +1,38 @@
+{
+  "name": "activapp-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo para ActivApp - PWA SaaS Multi-Tenant y Offline-First (TFG)",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm.cmd run dev --workspace=backend",
+    "dev:frontend": "npm.cmd run dev --workspace=frontend",
+    "build:shared": "npm.cmd run build --workspace=shared",
+    "build:backend": "npm.cmd run build --workspace=backend",
+    "build:frontend": "npm.cmd run build --workspace=frontend",
+    "build": "npm.cmd run build:shared && npm.cmd run build:backend && npm.cmd run build:frontend",
+    "test": "npm.cmd run test --workspaces --if-present",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm.cmd run db:migrate --workspace=backend",
+    "db:seed": "npm.cmd run db:seed --workspace=backend",
+    "db:studio": "npm.cmd run db:studio --workspace=backend"
+  },
+  "keywords": [
+    "tfg",
+    "pwa",
+    "offline-first",
+    "multi-tenant",
+    "local-first",
+    "crdt",
+    "merge-engine",
+    "legaltech",
+    "rbac"
+  ],
+  "author": "Joel Navarro",
+  "license": "UNLICENSED"
+}
