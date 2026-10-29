@@ -1,0 +1,50 @@
+# Documentación Académica Privada (Memoria TFG)
+MemoriaTFG.docx
+*.docx
+docs/privado/
+
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Entornos y Secretos
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Compilación y Distribución
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Logs y Cachés
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Base de Datos Local y Docker
+docker/pgdata/
+*.sqlite
+*.sqlite-journal
+
+# Cobertura y Testing
+coverage/
+
+# Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
