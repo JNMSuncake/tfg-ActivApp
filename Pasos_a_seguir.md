@@ -8,17 +8,21 @@ Para asegurar la máxima calidad y evitar regresiones o código desordenado, se 
 ## 🚦 Bloques de Desarrollo (Stage Lock)
 
 ```
-[Fase 0: Base y Documentación] ✅ (En Curso)
+[Fase 0: Base y Documentación]              ✅ COMPLETA
          ↓
-[Fase 1: Core Multi-Tenant, Auth y RBAC Dinámico] 🔒
+[Fase 1: Core Multi-Tenant, Auth y RBAC]    ✅ COMPLETA
          ↓
-[Fase 2: Calendario, Actividades, Inscripciones y Finanzas] 🔒
+[Memoria Entrega 1 (Abstract + 1 + 2 + 3)]  ✅ COMPLETA (MemoriaEntrega1_ActivApp.docx — privado, no en repo)
          ↓
-[Fase 3: Motor Offline-First, IndexedDB y Algoritmo Merge] 🔒
+[Fase 2A: Actividades, Inscripciones, Menores]  🔒 PENDIENTE
          ↓
-[Fase 4: LegalTech (Firma Canvas a PDF) y Web Push API] 🔒
+[Fase 2B: Stripe real + LegalTech PDF SHA-256]  🔒 PENDIENTE
          ↓
-[Fase 5: Modo Simulación Tribunal, Testing Integral y Memoria Final] 🔒
+[Fase 3: Motor Offline-First, IndexedDB y Merge Engine] 🔒 PENDIENTE
+         ↓
+[Fase 4: Web Push API + Panel estadísticas]  🔒 PENDIENTE
+         ↓
+[Fase 5: Modo Simulación Tribunal, Testing Integral y Memoria Final] 🔒 PENDIENTE
 ```
 
 ---
