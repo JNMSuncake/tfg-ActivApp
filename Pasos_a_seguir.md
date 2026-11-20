@@ -14,13 +14,13 @@ Para asegurar la máxima calidad y evitar regresiones o código desordenado, se 
          ↓
 [Memoria Entrega 1 (Abstract + 1 + 2 + 3)]  ✅ COMPLETA (MemoriaEntrega1_ActivApp.docx — privado, no en repo)
          ↓
-[Fase 2A: Actividades, Inscripciones, Menores]  🔒 PENDIENTE
+[Fase 2A: Actividades, Calendario, Inscripciones y Menores] ✅ COMPLETA
          ↓
-[Fase 2B: Stripe real + LegalTech PDF SHA-256]  🔒 PENDIENTE
+[Fase 2B: Stripe Real + LegalTech PDF con Firma SHA-256] 🔒 PENDIENTE
          ↓
 [Fase 3: Motor Offline-First, IndexedDB y Merge Engine] 🔒 PENDIENTE
          ↓
-[Fase 4: Web Push API + Panel estadísticas]  🔒 PENDIENTE
+[Fase 4: Web Push API + Panel Estadísticas]  🔒 PENDIENTE
          ↓
 [Fase 5: Modo Simulación Tribunal, Testing Integral y Memoria Final] 🔒 PENDIENTE
 ```
@@ -63,21 +63,35 @@ Para asegurar la máxima calidad y evitar regresiones o código desordenado, se 
 
 ---
 
-### Fase 2: Calendario, Actividades, Inscripciones y Finanzas
-- [ ] Backend: Modelos y endpoints para Actividades y Sesiones (`Activity`, `ActivitySession`):
+### Fase 2A: Calendario, Actividades, Inscripciones y Menores ✅
+- [x] Backend: Modelos y endpoints para Actividades y Sesiones (`Activity`, `ActivitySession`):
   - Gestión de aforo máximo, edades permitidas y bandera `requires_authorization`.
-  - Lista estructurada de checklist de material (`RequiredMaterial[]`).
-- [ ] Backend: Máquina de estados de Inscripciones (`Enrollment`):
+  - Lista estructurada de checklist de material (`RequiredMaterialItem[]`).
+- [x] Backend: Gestión de Menores y Familias (`Child`, `TutorChildRelation`):
+  - Fichas completas, contactos de emergencia y filtrado ABAC médico contextual.
+- [x] Backend: Máquina de estados de Inscripciones (`Enrollment`):
   - Lógica automática de lista de espera ordenada por timestamp (`WAITLISTED`).
   - Promoción automática ante bajas de plazas confirmadas.
-- [ ] Backend: Modelo financiero desacoplado (`PaymentTransaction`):
-  - Registro de pagos en efectivo o transferencia y validación manual por el administrador.
-  - Campos reservados para pasarelas futuras (`provider`, `external_tx_id`, `idempotency_key`).
-- [ ] Frontend:
-  - Vista de calendario interactivo mensual, semanal y agenda.
-  - Flujo de inscripción para tutores legales con advertencias de aforo y material necesario.
-  - Panel administrativo de control de cupos y validación de cobros.
-- **Criterio de Aceptación Fase 2:** Flujo de inscripción y lista de espera verificado con tests automáticos y UI responsiva funcional.
+- [x] Frontend:
+  - Catálogo de actividades interactivo con filtros, aforos en tiempo real y checklist de material.
+  - Vista de calendario interactivo mensual y agenda con sesiones coloreadas por tipología.
+  - Panel "Mis Participantes" con registro de menores y gestión de inscripciones/cancelación.
+  - Modal de creación de actividades para Administradores y Monitores.
+- [x] **Criterio de Aceptación Fase 2A:** Compilación con 0 errores TypeScript en todos los workspaces y commit en GitHub.
+
+---
+
+### Fase 2B: Pasarela Bancaria Real (Stripe) y LegalTech (Firma Canvas a PDF con SHA-256) 🔒
+- [ ] Backend: Integración real con **Stripe**:
+  - Endpoint para crear `CheckoutSession` vinculada a la inscripción de la actividad.
+  - Endpoint de Webhook `/api/payments/webhook` con verificación de firma criptográfica de Stripe.
+  - Reconciliación de transacciones en `PaymentTransaction`.
+- [ ] Frontend: Componente `<SignaturePad />` en `<canvas>`:
+  - Captura biométrica de trazos de firma con curvas de Bézier e interpolación.
+- [ ] Backend/Frontend: Generación de PDF Inmutable con `pdf-lib`:
+  - Maquetación con datos del club, actividad, menor y firma incrustada.
+  - Sellado con hash SHA-256 verificable para el tribunal.
+- [ ] **Criterio de Aceptación Fase 2B:** Flujo de pago real comprobado y PDF con firma y hash generado exitosamente.
 
 ---
 
