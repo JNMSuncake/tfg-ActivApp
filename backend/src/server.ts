@@ -5,6 +5,10 @@ import { env } from './config/env.js';
 import { prisma } from './config/prisma.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { rolesRoutes } from './modules/roles/roles.routes.js';
+import { activitiesRoutes } from './modules/activities/activities.routes.js';
+import { childrenRoutes } from './modules/children/children.routes.js';
+import { enrollmentsRoutes } from './modules/enrollments/enrollments.routes.js';
+import { sessionsRoutes } from './modules/sessions/sessions.routes.js';
 
 const app = express();
 
@@ -40,6 +44,12 @@ app.get('/api/health', async (_req, res) => {
 // Rutas de la API (Módulos Core)
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', rolesRoutes);
+
+// Rutas de la API (Módulos Fase 2A — Actividades, Menores e Inscripciones)
+app.use('/api/activities', activitiesRoutes);
+app.use('/api/children', childrenRoutes);
+app.use('/api/enrollments', enrollmentsRoutes);
+app.use('/api/sessions', sessionsRoutes);
 
 // Manejador de rutas no encontradas
 app.use((_req, res) => {
