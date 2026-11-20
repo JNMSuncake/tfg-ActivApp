@@ -63,3 +63,45 @@ export interface ChildSummaryDto {
   medicalNotes?: string | null;
   isMedicalContextActive?: boolean;
 }
+
+export interface ActivitySessionDto {
+  id: string;
+  tenantId: string;
+  activityId: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  sharedNotes?: string | null;
+  monitors?: Array<{ monitorUserId: string }>;
+}
+
+export interface ActivityDto {
+  id: string;
+  tenantId: string;
+  title: string;
+  description: string;
+  type: ActivityType;
+  maxCapacity: number;
+  minAge?: number | null;
+  maxAge?: number | null;
+  requiresAuthorization: boolean;
+  requiredMaterial: RequiredMaterialItem[];
+  priceCents: number;
+  createdAt: string;
+  sessions?: ActivitySessionDto[];
+  _count?: {
+    enrollments?: number;
+  };
+}
+
+export interface EnrollmentDto {
+  id: string;
+  tenantId: string;
+  activityId: string;
+  childId: string;
+  status: EnrollmentStatus;
+  waitlistPosition?: number | null;
+  createdAt: string;
+  activity?: { id: string; title: string };
+  child?: { id: string; fullName: string };
+}
