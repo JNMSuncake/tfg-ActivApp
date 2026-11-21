@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { X, Plus, Trash2, Calendar, MapPin, Euro, Users, ShieldAlert, Sparkles } from 'lucide-react';
-import { ActivityType, RequiredMaterialItem, ActivityDto } from '@activapp/shared';
+import { X, Plus, Trash2, Calendar, MapPin, Euro, Users, ShieldAlert, Sparkles, Upload, FileText, Image as ImageIcon } from 'lucide-react';
+import { ActivityType, RequiredMaterialItem, ActivityDto, AttachedDocumentDto } from '@activapp/shared';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ export function CreateActivityModal({ isOpen, onClose, onCreate, tenantName }: C
   const [maxAge, setMaxAge] = useState<number | ''>('');
   const [priceEuros, setPriceEuros] = useState<number>(0);
   const [requiresAuthorization, setRequiresAuthorization] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<AttachedDocumentDto | null>(null);
 
   // Material requerido
   const [materialItems, setMaterialItems] = useState<RequiredMaterialItem[]>([]);
@@ -50,6 +51,24 @@ export function CreateActivityModal({ isOpen, onClose, onCreate, tenantName }: C
     setMaterialItems(materialItems.filter((item) => item.id !== id));
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachedFile({
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        fileDataUrl: reader.result as string,
+        uploadedAt: new Date().toISOString()
+      });
+      setRequiresAuthorization(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
@@ -67,6 +86,7 @@ export function CreateActivityModal({ isOpen, onClose, onCreate, tenantName }: C
       priceCents: Math.round(Number(priceEuros) * 100),
       requiresAuthorization,
       requiredMaterial: materialItems,
+      attachedDocument: attachedFile,
       initialSession: {
         startTime: start.toISOString(),
         endTime: end.toISOString(),
@@ -227,6 +247,55 @@ export function CreateActivityModal({ isOpen, onClose, onCreate, tenantName }: C
                 checked={requiresAuthorization}
                 onChange={(e) => setRequiresAuthorization(e.target.checked)}
               />
+            </div>
+
+            {/* Documento adjunto para firma biométrica */}
+            <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-bold uppercase text-blue-900 flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5 text-blue-700" /> Adjuntar Archivo para Firma (PDF o PNG)
+                </label>
+                <span className="text-[10px] text-blue-600 font-semibold">LegalTech</span>
+              </div>
+              <p className="text-[11px] text-blue-800 leading-relaxed">
+                Sube el documento de autorización parental o ficha que los tutores deberán firmar en la app.
+              </p>
+
+              {attachedFile ? (
+                <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-blue-200 text-xs shadow-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    {attachedFile.fileType.includes('image') ? (
+                      <ImageIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    )}
+                    <span className="font-semibold text-gray-800 truncate">{attachedFile.fileName}</span>
+                    <span className="text-[10px] text-gray-400">
+                      ({(attachedFile.fileSize / 1024).toFixed(1)} KB)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAttachedFile(null)}
+                    className="text-red-500 hover:text-red-700 p-1"
+                    title="Quitar archivo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-xl p-3 flex flex-col items-center justify-center gap-1 cursor-pointer bg-white transition-colors">
+                  <Upload className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-bold text-blue-900">Seleccionar documento (.pdf, .png, .jpg)</span>
+                  <span className="text-[10px] text-gray-400">Máximo 10 MB</span>
+                  <input
+                    type="file"
+                    accept=".pdf,image/png,image/jpeg"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </label>
+              )}
             </div>
           </div>
 

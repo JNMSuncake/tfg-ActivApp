@@ -152,12 +152,13 @@ export class ActivitiesService {
   }
 
   /**
-   * Eliminar una actividad (soft: verificar que no tiene inscritos confirmados)
+   * Eliminar una actividad (siempre y cuando no haya pasado ya en el tiempo)
    */
   static async delete(tenantId: string, activityId: string) {
     const activity = await prisma.activity.findFirst({
       where: { id: activityId, tenantId },
       include: {
+        sessions: true,
         _count: {
           select: { enrollments: { where: { status: 'CONFIRMED' } } }
         }
@@ -168,8 +169,11 @@ export class ActivitiesService {
       throw new Error('ACTIVITY_NOT_FOUND');
     }
 
-    if (activity._count.enrollments > 0) {
-      throw new Error('ACTIVITY_HAS_CONFIRMED_ENROLLMENTS');
+    // Regla de Negocio: No se pueden eliminar actividades que ya se hayan celebrado (pasadas)
+    const now = new Date();
+    const hasPastSession = activity.sessions.some(s => new Date(s.startTime) < now);
+    if (hasPastSession) {
+      throw new Error('CANNOT_DELETE_PAST_ACTIVITY');
     }
 
     return prisma.activity.delete({

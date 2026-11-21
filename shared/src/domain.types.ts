@@ -64,6 +64,14 @@ export interface ChildSummaryDto {
   isMedicalContextActive?: boolean;
 }
 
+export interface AttachedDocumentDto {
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  fileDataUrl?: string; // Base64 o URL para previsualizar/descargar
+  uploadedAt: string;
+}
+
 export interface ActivitySessionDto {
   id: string;
   tenantId: string;
@@ -86,6 +94,7 @@ export interface ActivityDto {
   maxAge?: number | null;
   requiresAuthorization: boolean;
   requiredMaterial: RequiredMaterialItem[];
+  attachedDocument?: AttachedDocumentDto | null;
   priceCents: number;
   createdAt: string;
   sessions?: ActivitySessionDto[];

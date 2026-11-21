@@ -10,7 +10,12 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Image as ImageIcon,
+  Download,
+  Trash2,
+  Lock
 } from 'lucide-react';
 import { ActivityDto, ActivityType, UserSessionPayload, ChildSummaryDto } from '@activapp/shared';
 
@@ -20,6 +25,7 @@ interface ActivitiesListProps {
   childrenList: ChildSummaryDto[];
   onOpenCreateModal: () => void;
   onEnrollChild: (activityId: string, childId: string) => void;
+  onDeleteActivity?: (activityId: string) => void;
 }
 
 export function ActivitiesList({
@@ -27,7 +33,8 @@ export function ActivitiesList({
   currentUser,
   childrenList,
   onOpenCreateModal,
-  onEnrollChild
+  onEnrollChild,
+  onDeleteActivity
 }: ActivitiesListProps) {
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
@@ -223,6 +230,32 @@ export function ActivitiesList({
                     </div>
                   )}
 
+                  {/* Documento adjunto si existe */}
+                  {act.attachedDocument && (
+                    <div className="flex items-center justify-between p-2.5 bg-purple-50 rounded-xl border border-purple-200/80 text-xs">
+                      <div className="flex items-center gap-2 truncate">
+                        {act.attachedDocument.fileType.includes('image') ? (
+                          <ImageIcon className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                        ) : (
+                          <FileText className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                        )}
+                        <div className="truncate">
+                          <span className="font-semibold text-purple-950 truncate block text-[11px]">{act.attachedDocument.fileName}</span>
+                          <span className="text-[10px] text-purple-600">Documento legal adjunto</span>
+                        </div>
+                      </div>
+                      {act.attachedDocument.fileDataUrl && (
+                        <a
+                          href={act.attachedDocument.fileDataUrl}
+                          download={act.attachedDocument.fileName}
+                          className="px-2.5 py-1 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors flex-shrink-0"
+                        >
+                          <Download className="w-3 h-3" /> Descargar
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   {/* Desplegable de Checklist de Material Requerido */}
                   {act.requiredMaterial && act.requiredMaterial.length > 0 && (
                     <div className="pt-1">
@@ -253,27 +286,65 @@ export function ActivitiesList({
                   )}
                 </div>
 
-                {/* Footer de Tarjeta con Botón de Inscripción */}
-                <div className="p-4 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between">
-                  <div className="text-[11px] text-gray-500">
-                    {act.minAge || act.maxAge ? (
-                      <span>Edades: {act.minAge || 0} a {act.maxAge || '+'} años</span>
-                    ) : (
-                      <span>Todas las edades</span>
-                    )}
-                  </div>
+                {/* Footer de Tarjeta con Botón de Inscripción y Eliminación */}
+                {(() => {
+                  const now = new Date();
+                  const hasPastSessions = act.sessions && act.sessions.length > 0
+                    ? act.sessions.some(s => new Date(s.startTime) < now)
+                    : false;
+                  const canManage = currentUser?.permissions.includes('activities:delete') || currentUser?.permissions.includes('activities:create') || currentUser?.isSystemAdmin;
 
-                  <button
-                    onClick={() => setEnrollModalActivity(act)}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                      isFull
-                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                        : 'bg-brand-700 hover:bg-brand-800 text-white'
-                    }`}
-                  >
-                    {isFull ? 'Unirse a Lista de Espera' : 'Inscribirse / Apuntar'}
-                  </button>
-                </div>
+                  return (
+                    <div className="p-4 bg-gray-50/70 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <div className="text-[11px] text-gray-500">
+                          {act.minAge || act.maxAge ? (
+                            <span>Edades: {act.minAge || 0} a {act.maxAge || '+'} años</span>
+                          ) : (
+                            <span>Todas las edades</span>
+                          )}
+                        </div>
+
+                        {canManage && onDeleteActivity && (
+                          hasPastSessions ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-100 text-gray-400 text-[10px] font-semibold cursor-not-allowed border border-gray-200"
+                              title="No eliminable por auditoría y RGPD: contiene sesiones ya celebradas"
+                            >
+                              <Lock className="w-3 h-3 text-gray-400" />
+                              No eliminable (pasada)
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`¿Seguro que deseas eliminar la actividad "${act.title}"? Esta acción cancelará las inscripciones asociadas.`)) {
+                                  onDeleteActivity(act.id);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-red-600 hover:bg-red-50 text-[10px] font-semibold transition-colors border border-transparent hover:border-red-200"
+                              title="Eliminar actividad"
+                            >
+                              <Trash2 className="w-3 h-3 text-red-500" />
+                              Eliminar
+                            </button>
+                          )
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => setEnrollModalActivity(act)}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                          isFull
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                            : 'bg-brand-700 hover:bg-brand-800 text-white'
+                        }`}
+                      >
+                        {isFull ? 'Unirse a Lista de Espera' : 'Inscribirse / Apuntar'}
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}

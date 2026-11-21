@@ -90,10 +90,10 @@ export class ActivitiesController {
         res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada' });
         return;
       }
-      if (error.message === 'ACTIVITY_HAS_CONFIRMED_ENROLLMENTS') {
-        res.status(409).json({
-          error: 'ACTIVITY_HAS_CONFIRMED_ENROLLMENTS',
-          message: 'No se puede eliminar: hay participantes confirmados inscritos'
+      if (error.message === 'CANNOT_DELETE_PAST_ACTIVITY') {
+        res.status(403).json({
+          error: 'CANNOT_DELETE_PAST_ACTIVITY',
+          message: 'No se puede eliminar una actividad que ya se ha celebrado en el pasado'
         });
         return;
       }

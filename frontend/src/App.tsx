@@ -19,7 +19,8 @@ import {
   ActivityDto, 
   ChildSummaryDto, 
   EnrollmentDto,
-  ActivityTemplateDto 
+  ActivityTemplateDto,
+  AttachedDocumentDto 
 } from '@activapp/shared';
 import { ActivitiesList } from './components/ActivitiesList';
 import { ActivityCalendar } from './components/ActivityCalendar';
@@ -144,6 +145,12 @@ export default function App() {
       maxAge: 16,
       priceCents: 1500, // 15.00 €
       requiresAuthorization: true,
+      attachedDocument: {
+        fileName: 'Autorizacion_Paterna_Montseny_2026.pdf',
+        fileSize: 148500,
+        fileType: 'application/pdf',
+        uploadedAt: '2026-11-16T15:30:00.000Z'
+      },
       requiredMaterial: [
         { id: 'm4', name: 'Calzado de senderismo', isMandatory: true },
         { id: 'm5', name: 'Chubasquero o impermeable', isMandatory: true },
@@ -162,6 +169,32 @@ export default function App() {
         }
       ],
       _count: { enrollments: 8 }
+    },
+    {
+      id: 'act-3',
+      tenantId: 'ten-club',
+      title: 'Reunión de Inicio de Temporada 2026',
+      description: 'Asamblea general informativa con familias y entrenadores para el arranque del nuevo curso deportivo.',
+      type: 'REUNION',
+      maxCapacity: 50,
+      minAge: null,
+      maxAge: null,
+      priceCents: 0,
+      requiresAuthorization: false,
+      requiredMaterial: [],
+      createdAt: '2026-11-01T10:00:00.000Z',
+      sessions: [
+        {
+          id: 'sess-3',
+          tenantId: 'ten-club',
+          activityId: 'act-3',
+          startTime: '2026-11-10T18:00:00.000Z',
+          endTime: '2026-11-10T19:30:00.000Z',
+          location: 'Sala de Actos del Club Social',
+          sharedNotes: 'Presentación de la normativa interna y entrega del dossier del alumno.'
+        }
+      ],
+      _count: { enrollments: 32 }
     }
   ]);
 
@@ -304,6 +337,7 @@ export default function App() {
       priceCents: activityData.priceCents || 0,
       requiresAuthorization: activityData.requiresAuthorization || false,
       requiredMaterial: activityData.requiredMaterial || [],
+      attachedDocument: activityData.attachedDocument || null,
       createdAt: new Date().toISOString(),
       sessions: [
         {
@@ -339,6 +373,7 @@ export default function App() {
       priceCents: newActData.priceCents || 0,
       requiresAuthorization: newActData.requiresAuthorization || false,
       requiredMaterial: newActData.requiredMaterial || [],
+      attachedDocument: newActData.attachedDocument || null,
       createdAt: new Date().toISOString(),
       sessions: newActData.initialSession ? [
         {
@@ -355,6 +390,41 @@ export default function App() {
 
     setActivities([newActivity, ...activities]);
     setSystemAlert(`¡Actividad "${newActivity.title}" publicada con éxito!`);
+    setTimeout(() => setSystemAlert(null), 4000);
+  };
+
+  // Manejador: Eliminar Actividad (con regla de negocio temporal: bloqueado si ya ha pasado)
+  const handleDeleteActivity = (activityId: string) => {
+    const targetActivity = activities.find(a => a.id === activityId);
+    if (!targetActivity) return;
+
+    const now = new Date();
+    const hasPastSession = targetActivity.sessions?.some(s => new Date(s.startTime) < now);
+
+    if (hasPastSession) {
+      alert(`No se puede eliminar la actividad "${targetActivity.title}" porque ya contiene sesiones celebradas en el pasado. Las actividades pasadas deben preservarse por motivos de trazabilidad, auditoría y RGPD.`);
+      return;
+    }
+
+    setActivities(prev => prev.filter(a => a.id !== activityId));
+    setEnrollments(prev => prev.filter(e => e.activityId !== activityId));
+    setSystemAlert(`La actividad "${targetActivity.title}" ha sido eliminada correctamente.`);
+    setTimeout(() => setSystemAlert(null), 4000);
+  };
+
+  // Manejador: Adjuntar Documento a una Actividad existente
+  const handleAttachDocument = (activityId: string, document: AttachedDocumentDto) => {
+    setActivities(prev => prev.map(a => {
+      if (a.id === activityId) {
+        return {
+          ...a,
+          attachedDocument: document,
+          requiresAuthorization: true
+        };
+      }
+      return a;
+    }));
+    setSystemAlert(`Documento "${document.fileName}" adjuntado para firma biométrica.`);
     setTimeout(() => setSystemAlert(null), 4000);
   };
 
@@ -699,6 +769,7 @@ export default function App() {
             childrenList={childrenList}
             onOpenCreateModal={() => setIsCreateModalOpen(true)}
             onEnrollChild={handleEnrollChild}
+            onDeleteActivity={handleDeleteActivity}
           />
         )}
 
@@ -710,6 +781,8 @@ export default function App() {
             tenantName={currentUser?.tenantName || 'Entidad'}
             onScheduleActivity={handleScheduleActivityFromCalendar}
             onSaveTemplate={handleSaveTemplate}
+            onDeleteActivity={handleDeleteActivity}
+            onAttachDocument={handleAttachDocument}
           />
         )}
 
