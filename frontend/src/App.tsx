@@ -18,7 +18,8 @@ import {
   UserSessionPayload, 
   ActivityDto, 
   ChildSummaryDto, 
-  EnrollmentDto 
+  EnrollmentDto,
+  ActivityTemplateDto 
 } from '@activapp/shared';
 import { ActivitiesList } from './components/ActivitiesList';
 import { ActivityCalendar } from './components/ActivityCalendar';
@@ -213,6 +214,115 @@ export default function App() {
       child: { id: 'ch-1', fullName: 'Pau Navarro Soler' }
     }
   ]);
+
+  // Biblioteca de Plantillas de Actividades Guardadas (Estilo Jira Backlog/Templates)
+  const [templates, setTemplates] = useState<ActivityTemplateDto[]>([
+    {
+      id: 'tmpl-1',
+      tenantId: 'ten-club',
+      title: 'Entrenamiento Fútbol Base A',
+      description: 'Sesión estándar de 90 minutos con calentamiento, circuitos técnicos y partidillo reducido.',
+      type: 'ENTRENAMIENTO',
+      defaultLocation: 'Campo Municipal de Gràcia (Césped)',
+      maxCapacity: 18,
+      minAge: 8,
+      maxAge: 12,
+      priceCents: 0,
+      requiresAuthorization: false,
+      requiredMaterial: [
+        { id: 'm1', name: 'Botas multitaco', isMandatory: true },
+        { id: 'm2', name: 'Espinilleras homologadas', isMandatory: true },
+        { id: 'm3', name: 'Cantimplora con agua', isMandatory: false }
+      ]
+    },
+    {
+      id: 'tmpl-2',
+      tenantId: 'ten-club',
+      title: 'Excursión de Fin de Semana Esplai',
+      description: 'Salida de día completo a entorno natural con juegos de orientación y dinámicas de grupo.',
+      type: 'EXCURSION',
+      defaultLocation: 'Punto de Encuentro: Estación de Gràcia',
+      maxCapacity: 25,
+      minAge: 7,
+      maxAge: 15,
+      priceCents: 1500, // 15 €
+      requiresAuthorization: true,
+      requiredMaterial: [
+        { id: 'm4', name: 'Calzado de montaña', isMandatory: true },
+        { id: 'm5', name: 'Chubasquero', isMandatory: true },
+        { id: 'm6', name: 'Almuerzo de pícnic', isMandatory: true }
+      ]
+    },
+    {
+      id: 'tmpl-3',
+      tenantId: 'ten-club',
+      title: 'Partido Oficial de Liga Local',
+      description: 'Encuentro de competición federada escolar con arbitraje oficial.',
+      type: 'PARTIDO',
+      defaultLocation: 'Pista Polideportiva Cubierta',
+      maxCapacity: 14,
+      minAge: 9,
+      maxAge: 13,
+      priceCents: 0,
+      requiresAuthorization: false,
+      requiredMaterial: [
+        { id: 'm7', name: 'Equipación oficial del club', isMandatory: true },
+        { id: 'm8', name: 'DNI / Ficha federativa', isMandatory: true }
+      ]
+    }
+  ]);
+
+  // Manejador: Guardar Plantilla en la Biblioteca
+  const handleSaveTemplate = (newTemplate: ActivityTemplateDto) => {
+    // Si ya existe con el mismo ID, actualizar; si no, agregar
+    setTemplates(prev => {
+      const exists = prev.some(t => t.id === newTemplate.id);
+      if (exists) {
+        return prev.map(t => t.id === newTemplate.id ? newTemplate : t);
+      }
+      return [newTemplate, ...prev];
+    });
+    setSystemAlert(`¡Plantilla "${newTemplate.title}" guardada en la biblioteca!`);
+    setTimeout(() => setSystemAlert(null), 4000);
+  };
+
+  // Manejador: Programar Actividad directamente desde el Calendario (Quick-Create Jira)
+  const handleScheduleActivityFromCalendar = (
+    activityData: Partial<ActivityDto> & { initialSession: any },
+    saveAsTemplate?: boolean
+  ) => {
+    const actId = `act-${Date.now()}`;
+    const newActivity: ActivityDto = {
+      id: actId,
+      tenantId: currentUser?.tenantId || 'ten-club',
+      title: activityData.title || 'Actividad Programada',
+      description: activityData.description || '',
+      type: activityData.type || 'ENTRENAMIENTO',
+      maxCapacity: activityData.maxCapacity || 20,
+      minAge: activityData.minAge ?? null,
+      maxAge: activityData.maxAge ?? null,
+      priceCents: activityData.priceCents || 0,
+      requiresAuthorization: activityData.requiresAuthorization || false,
+      requiredMaterial: activityData.requiredMaterial || [],
+      createdAt: new Date().toISOString(),
+      sessions: [
+        {
+          id: `sess-${Date.now()}`,
+          tenantId: currentUser?.tenantId || 'ten-club',
+          activityId: actId,
+          startTime: activityData.initialSession.startTime,
+          endTime: activityData.initialSession.endTime,
+          location: activityData.initialSession.location
+        }
+      ],
+      _count: { enrollments: 0 }
+    };
+
+    setActivities(prev => [newActivity, ...prev]);
+    const extraMsg = saveAsTemplate ? ' y guardada como plantilla' : '';
+    setSystemAlert(`¡Actividad "${newActivity.title}" añadida al calendario${extraMsg}!`);
+    setTimeout(() => setSystemAlert(null), 4000);
+  };
 
   // Manejador: Crear Actividad
   const handleCreateActivity = (newActData: Partial<ActivityDto> & { initialSession?: any }) => {
@@ -596,7 +706,10 @@ export default function App() {
         {activeTab === 'calendar' && (
           <ActivityCalendar
             activities={activities}
+            templates={templates}
             tenantName={currentUser?.tenantName || 'Entidad'}
+            onScheduleActivity={handleScheduleActivityFromCalendar}
+            onSaveTemplate={handleSaveTemplate}
           />
         )}
 

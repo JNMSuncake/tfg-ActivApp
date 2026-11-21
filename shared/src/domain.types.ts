@@ -94,6 +94,21 @@ export interface ActivityDto {
   };
 }
 
+export interface ActivityTemplateDto {
+  id: string;
+  tenantId: string;
+  title: string;
+  description: string;
+  type: ActivityType;
+  defaultLocation: string;
+  maxCapacity: number;
+  minAge?: number | null;
+  maxAge?: number | null;
+  priceCents: number;
+  requiresAuthorization: boolean;
+  requiredMaterial: RequiredMaterialItem[];
+}
+
 export interface EnrollmentDto {
   id: string;
   tenantId: string;
