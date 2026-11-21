@@ -16,6 +16,7 @@ node_modules/
 
 # Compilación y Distribución
 dist/
+dev-dist/
 build/
 out/
 *.tsbuildinfo
